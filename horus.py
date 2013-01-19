@@ -72,7 +72,7 @@ def process_data():
         timeout = 1
     )
 
-    #logger = create_logger(foreground=False, verbose=True)
+    logger = create_logger(foreground=False, verbose=True)
     try:
         conn = sqlite3.connect(dbfile)
         cur = conn.cursor()
@@ -82,8 +82,7 @@ def process_data():
             current = ser.readline()[:-1]
             if current:
                 try:
-                    cur.execute("INSERT INTO current(timestamp, amps) VALUES (?,?)",
-                               (datetime.datetime.now(), float(current)))
+                    cur.execute("INSERT INTO current(amps) VALUES (?)", (float(current),))
                     conn.commit()
                 except Exception, e:
                     print e
@@ -95,7 +94,7 @@ def process_data():
         return
     finally:
         conn.close()
-
+        logging.info("Finished process_data")
 
 install(bottle_sqlite.SQLitePlugin(dbfile=dbfile))
 
@@ -170,24 +169,18 @@ class HorusServer(Daemon):
 
     def shutdown(self):
         os.kill(self.process.pid, signal.SIGINT)
-        os.kill(self.process_data_grouper.pid, signal.SIGINT)
 
     def stop(self):
-        stop_queue.put(True)
+        stop_queue.put(True) 
         if self.process:
             self.process.join()
-
-        if self.process_data_grouper:
-            self.process_data_grouper.join()
+        logging.critical("done stop callback - here2")
 
         super(HorusServer, self).stop()
 
     def run(self):
         self.process = Process(target=process_data)
         self.process.start()
-
-        #self.process_data_grouper = Process(target=data_grouper)
-        #self.process_data_grouper.start()
 
         bottle.debug(True)
         app = bottle.default_app()

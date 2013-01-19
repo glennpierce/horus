@@ -127,10 +127,14 @@ class Daemon(object):
         resource.setrlimit(core_resource, core_limit)
 
     def sig_term_called(self, signum, frame):
-        logging.info("pid id %s:", os.getpid())
-        self.shutdown()
+        logging.info("sig_term_called: pid id %s:", os.getpid())
+        try:
+            self.shutdown()
+        except Exception, e:
+            logging.critical(e)        
 
         pid = self.readpid()
+        logging.info("sig_term_called: read pid id %s:", pid)
         if pid:
             self.delpid()
 
@@ -254,6 +258,7 @@ class Daemon(object):
         logging.info("shutdown issued pid: %s", pid)
         if pid:
             try:
+                logging.info("sending sigterm %s" % (pid,))
                 os.kill(pid, signal.SIGTERM)
             except Exception, e:
                 print e
