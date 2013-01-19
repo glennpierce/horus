@@ -1,0 +1,198 @@
+html, body {margin:0; padding:0; width:100%; height:100%;}
+
+body {
+    font: 13.34px helvetica,arial,freesans,clean,sans-serif;
+    color: black;
+    text-align: center;
+    background-color:#ffffff;
+    line-height: 1.4em;
+}
+
+h2 {
+    display: block;
+    font-size: 13.34px;
+    clear: both;
+    padding: 10px 5px 10px 5px;
+    margin: 20px;
+    
+}
+
+hr {
+    width: 920px;
+    padding: 0;
+    margin:20px auto;
+}
+
+a {
+    color: #4183C4;
+    text-decoration: none;
+}
+
+p {
+    margin: 1em 0;
+}
+
+.frame-center {
+    width:95%;
+    margin: 50px auto;
+    text-align: left;
+    padding-bottom: 50px;
+    border: 0px dotted red;
+    }
+
+.form-item label.option {
+    display: inline;
+}
+
+.dtable {
+    display: table;
+    margin:20px auto;
+    text-align:left;    
+    width: 90%;
+    border: 1px solid #E1E1E1;
+    -moz-user-select: -moz-none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.drow {
+    width: 100%;
+    display: table-row;
+    background: #F8F8F8 0 100% repeat-x;
+    color: #484848;
+}
+
+.dcell {
+    display: table-cell;  
+    padding: 0.2em 0.2em; 
+    vertical-align: middle;
+}
+
+.dcell.pad {
+    width:100%;
+}
+
+div.dcell input {
+    text-align: left;
+    display: inline;
+} 
+
+div.dcell  input[type="text"], input[type="password"] {
+    border: thin solid black;
+}
+
+div.dcell button {
+    float: right;
+    text-align: center;
+}
+
+div.dcell label {
+    padding: 0.2em;
+    display: inline;
+}
+
+div.dcell a {
+    padding: 0.2em;
+    display: inline;
+}
+
+/* IE HACKS */
+
+* html .drow {
+    height: 2em;
+}
+
+* html .dcell {
+    
+    display:inline;
+    background: #FFFFFF 0 100% repeat-x;
+    color: #FFFFFF;
+    border: none;
+}
+
+* html .dcell.pad {
+    width:100%;
+}
+
+
+#buttonDiv {
+    text-align: center;
+}
+
+#oblock {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: 700px;
+}
+
+fieldset.date select:active, 
+fieldset.date select:focus, 
+fieldset.date select:hover 
+{ 
+  border-color: gray; 
+  background-color: lightyellow;
+}
+
+.graph {
+    display: block;
+}
+
+div.scroll 
+{
+    width:100%;
+    height:500px;
+    overflow:auto;
+    padding: 0;
+    margin: 0;
+    border: 1px solid #E1E1E1;
+}
+
+#loading {
+    display:none;
+}
+
+#graph_container {
+    width: 90%;
+    height:250px;
+    position: relative;
+    border: 1px solid blue;
+    padding: 10px;
+    border: solid red 0px;
+}
+
+#graph_loading {
+    position: absolute;
+    top: 60px;
+    left: 300px;
+    z-index: 50;
+    width: 80px;
+    border: solid red 0px;
+}
+
+#graphdiv {
+    /*position: absolute;
+    top: 20;
+    left: 50;*/
+    display: block;
+    width: 90%;
+    height:250px;
+    font-size:0.8em;
+    border: 0px solid #D8D8D8;
+}
+
+#data_info {
+    display: inline-block;
+    width: 225px;
+    border: 1px solid #D8D8D8;
+    padding: 0.5em 0.5em 0.5em 0.5em;
+    margin-bottom: 0.5em;
+}
+
+.rounded-corners {
+    -moz-border-radius: 20px;
+    -webkit-border-radius: 20px;
+    -khtml-border-radius: 20px;
+    border-radius: 20px;
+}
