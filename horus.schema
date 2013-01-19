@@ -1,11 +1,10 @@
-CREATE TABLE current(day INTEGER, timestamp INTEGER, amps REAL);
-CREATE TABLE current_hours(day INTEGER, amps REAL);
-CREATE INDEX current_day_inx on current(day);
+CREATE TABLE current(timestamp INTEGER PRIMARY KEY, amps REAL);
+CREATE TABLE current_hours(day INTEGER PRIMARY KEY, amps REAL);
 CREATE INDEX current_timestap_inx on current(timestamp);
 CREATE INDEX current_hours_inx on current_hours(day);
 
-CREATE TRIGGER consolidator AFTER INSERT ON current
-BEGIN 
-   UPDATE current_hours SET amps = (amps - NEW.amps) 
-     WHERE day = NEW.day; 
-END; 
+--CREATE TRIGGER consolidator AFTER INSERT ON current
+--BEGIN 
+--   INSERT OR IGNORE INTO current_hours VALUES(date('now'), NEW.amps);
+--   UPDATE current_hours SET amps = amps + NEW.amps WHERE day = date('now');
+--END; 

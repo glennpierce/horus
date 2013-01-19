@@ -32,7 +32,7 @@ from logging.handlers import RotatingFileHandler
 import bottle_sqlite
 
 script_dir, script_name = os.path.split(os.path.abspath(__file__))
-dbfile = os.path.join(script_dir,'ecoiris.db')
+dbfile = os.path.join(script_dir,'horus.db')
 #sys.path.append(script_dir)
 TEMPLATE_PATH.append(script_dir)
 
@@ -56,13 +56,13 @@ def create_logger(foreground=False, verbose=False):
     if foreground:
         handler = logging.StreamHandler()
     else:
-        handler = RotatingFileHandler('/var/log/ecoiris.log', maxBytes=204800)
+        handler = RotatingFileHandler('/var/log/horus.log', maxBytes=204800)
 
     logger.addHandler(handler)
     return logger
 
 def process_data():
-    setproctitle("ecoiris - data processor")
+    setproctitle("horus - data processor")
     ser = serial.Serial(
         port='/dev/ttyUSB0',
         baudrate=19200,
@@ -74,70 +74,28 @@ def process_data():
 
     #logger = create_logger(foreground=False, verbose=True)
     try:
-        db = sqlite3.connect(dbfile)
+        conn = sqlite3.connect(dbfile)
+        cur = conn.cursor()
         count=0
         while stop_queue.empty():
             count+=1
-            #current = ser.readline()[:-1]
-            #if current:
-            #print datetime.datetime.now(), float(current)
+            current = ser.readline()[:-1]
+            if current:
+                try:
+                    cur.execute("INSERT INTO current(timestamp, amps) VALUES (?,?)",
+                               (datetime.datetime.now(), float(current)))
+                    conn.commit()
+                except Exception, e:
+                    print e
     except KeyboardInterrupt, e:
-        logging.info("exiting ecoiris")
+        logging.info("exiting horus")
         return
     except Exception, e:
         process_data()   # Try again
         return
+    finally:
+        conn.close()
 
-"""
-def data_grouper():
-    setproctitle("ecoiris - data grouper")
-    try:
-        db = sqlite3.connect(dbfile)
-        cur = db.cursor()
-
-        months = defaultdict(float)
-
-        while stop_queue.empty():
-            day_data = {}
-            cur.execute("select first_timestamp, last_timestamp from settings")
-            row = cur.fetchone()
-            if row[1] == 0:
-                last_timestap = row[0]
-            else:
-                last_timestap = row[1]
-
-            logging.info("%s", last_timestap)
-            next_timestamp = last_timestap + 84000
-
-            # Calculates values for days
-            cur.execute("select strftime('%Y-%m-%d',datetime(timestamp, 'unixepoch')), sum(amps) " \
-                        "from current where timestamp between ? and ? " \
-                        "group by strftime('%Y-%m-%d',timestamp)", (last_timestap,next_timestamp))
-            rows = cur.fetchall()    
-            if not rows:
-                return
-
-            for row in rows:
-                months[row[0]] += row[1]
-                
-            for k,v in months.items():
-                print k,v
-            
-
-            #cur.execute("insert into current_days(timestamp,amps) values (?,?)", (row[0], row[1]))
-
-            #cur.execute("update settings set last_timestamp=?", (next_timestamp,))
-            #db.commit()
-            time.sleep(0.1)
-    except KeyboardInterrupt, e:
-        logging.info("exiting ecoiris")
-        return
-    except Exception, e:
-        db.rollback()
-        logging.warning(e)
-        process_data()   # Try again
-        return
-"""
 
 install(bottle_sqlite.SQLitePlugin(dbfile=dbfile))
 
@@ -194,7 +152,7 @@ def default():
 
 class HorusServer(Daemon):
 
-    def __init__(self, pidfile='/var/run/ecoiris.pid', host="0.0.0.0", port=80, foreground=False):
+    def __init__(self, pidfile='/var/run/horus.pid', host="0.0.0.0", port=80, foreground=False):
         super(HorusServer, self).__init__(pidfile,
                                             stdin='/dev/null', stdout='/dev/null', stderr='/dev/null')
         self.foreground = foreground
@@ -204,7 +162,7 @@ class HorusServer(Daemon):
         self.process_data_grouper = None
 
     def start(self):
-        logging.info("starting ecoiris")
+        logging.info("starting horus")
         if self.foreground:
             return self.run()
         else:
@@ -261,7 +219,7 @@ if __name__ == "__main__":
 
     logger = create_logger(foreground=options.foreground, verbose=options.verbose)
 
-    server = HorusServer('/var/run/ecoiris.pid', port=options.port, foreground=options.foreground)
+    server = HorusServer('/var/run/horus.pid', port=options.port, foreground=options.foreground)
 
     if len(args) != 1:
         print usage

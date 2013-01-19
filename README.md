@@ -12,3 +12,4 @@ Dependencies
 
 pyserial
 python-sqlite3
+python-cherrypi (For raspberry pi I had to use easy_install as the debian python-cherrypi seems broken)
