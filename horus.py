@@ -82,7 +82,8 @@ def process_data():
             current = ser.readline()[:-1]
             if current:
                 try:
-                    cur.execute("INSERT INTO current(amps) VALUES (?)", (float(current),))
+                    # strftime('%s', 'now') returns now as utc
+                    cur.execute("INSERT INTO current(timestamp,amps) VALUES (strftime('%s', 'now'), ?)", (float(current),))
                     conn.commit()
                 except Exception, e:
                     print e
@@ -131,16 +132,15 @@ def data(db, from_year,from_month,from_day,to_year,to_month,to_day):
     months = defaultdict(float)
 
     cur = db.cursor()
-    print time.time()
 
     # 151200 is number of samples in 7 days
     if diff.total_seconds() < 151200:
         cur.execute("select datetime(timestamp, 'localtime'),amps from current")
     else:
-        cur.execute("select datetime(timestamp, 'locatime'),amps from current_days")
+        cur.execute("select strftime('%Y-%m-%d %H:30:00', hour, 'localtime'),amps from current_hours")
 
-    result = [(str(r[0]) + "," + str(r[1])) for r in cur.fetchall()]
-    print time.time()
+    results = cur.fetchall()
+    result = [(str(r[0]) + "," + str(r[1])) for r in results]
     print result
 
     return 'Date,Amps\n' + '\n'.join(result)

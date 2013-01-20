@@ -207,18 +207,6 @@ this.yAxisRanges());
             <div id="graph_loading"><img src="/static/ajax-loader.gif" /><span>Please Wait</span></div>
         </div>
         <div class="dcell">&nbsp;</div>
-        <div class="dcell">
- 
-            <div id="data_info">
-              <div>Sensor: <span id="sensor_name"></span></div>
-              <div>Sensor Id: <span id="sensor_id_display"></span></div>
-              <div>Total Values for sensor: <span id="sensor_num_values"></span></div>
-              <div>Average for sensor: <span id="sensor_average"></span></div>
-              <div><span id="ealiest_date"></span></div>
-              <div><span id="last_date"></span></div>	
-              <a id="csv_data_url">Raw csv data</a>
-            </div>
-        </div>
     </div>
 
 </form>
