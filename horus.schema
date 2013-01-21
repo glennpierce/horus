@@ -2,14 +2,22 @@ CREATE TABLE current(timestamp INTEGER PRIMARY KEY,
                      amps REAL
                     );
 
-CREATE TABLE current_hours(hour TEXT PRIMARY KEY,
+CREATE TABLE current_hours(timestamp INTEGER PRIMARY KEY,
                            amps REAL);
 
 CREATE INDEX current_timestamp_inx on current(timestamp);
-CREATE INDEX current_hours_inx on current_hours(hour);
+CREATE INDEX current_hours_inx on current_hours(timestamp);
+
+--select timestamp,strftime('%Y-%m-%d %H:%M:%S',  datetime((timestamp/3600)*3600, 'unixepoch') ),amps from current limit 1000;
+
+--CREATE TRIGGER consolidator AFTER INSERT ON current
+--BEGIN 
+--   INSERT OR IGNORE INTO current_hours (hour,amps) VALUES ((strftime('%Y-%m-%d %H:00', datetime(NEW.timestamp, 'unixepoch'))),0.0);
+--   UPDATE current_hours SET amps = (amps + NEW.amps) WHERE hour = strftime('%Y-%m-%d %H:00', datetime(NEW.timestamp, 'unixepoch')); 
+--END; 
 
 CREATE TRIGGER consolidator AFTER INSERT ON current
-BEGIN 
-   INSERT OR IGNORE INTO current_hours (hour,amps) VALUES ((strftime('%Y-%m-%d %H:00', datetime(NEW.timestamp, 'unixepoch'))),0.0);
-   UPDATE current_hours SET amps = (amps + NEW.amps) WHERE hour = strftime('%Y-%m-%d %H:00', datetime(NEW.timestamp, 'unixepoch')); 
-END; 
+BEGIN
+   INSERT OR IGNORE INTO current_hours (timestamp,amps) VALUES ((NEW.timestamp/3600)*3600,0.0);
+   UPDATE current_hours SET amps = (amps + NEW.amps) WHERE timestamp = ((NEW.timestamp/3600)*3600);
+END;
