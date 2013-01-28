@@ -82,8 +82,10 @@ def process_data():
             current = ser.readline()[:-1]
             if current:
                 try:
-                    # strftime('%s', 'now') returns now as utc
-                    cur.execute("INSERT INTO current(timestamp,amps) VALUES (strftime('%s', 'now'), ?)", (float(current),))
+                    timestamp = int(time.time()) 
+                    cur.execute("INSERT OR IGNORE INTO current_minutes  (timestamp,amps) VALUES ((?/300)*300,0.0)", (timestamp,))
+                    cur.execute("UPDATE current_minutes SET amps = amps + ? " \
+                                "WHERE timestamp = ((?/300)*300)", (float(current),timestamp))
                     conn.commit()
                 except Exception, e:
                     print e
@@ -115,9 +117,9 @@ def send_favicon():
 def server_static(filepath):
     return bottle.static_file(filepath, root=os.path.join(script_dir,'static/'))
 
-@route('/data/<from_year:int>/<from_month:int>/<from_day:int>/<to_year:int>/<to_month:int>/<to_day:int>',
+@route('/data/<from_year:int>/<from_month:int>/<from_day:int>/<to_year:int>/<to_month:int>/<to_day:int>/<type_id:int>',
   method=['GET'])
-def data(db, from_year,from_month,from_day,to_year,to_month,to_day):
+def data(db, from_year,from_month,from_day,to_year,to_month,to_day,type_id):
     d1 = datetime.date(year=from_year,month=from_month,day=from_day)
     d2 = datetime.date(year=to_year,month=to_month,day=to_day)
 
@@ -128,26 +130,61 @@ def data(db, from_year,from_month,from_day,to_year,to_month,to_day):
     timestamp2 = time.mktime(d2.timetuple())
 
     diff = d2 - d1
-
+ 
     months = defaultdict(float)
 
     cur = db.cursor()
 
-    # 151200 is number of samples in 7 days
-    if diff.total_seconds() < 151200:
-        cur.execute("select datetime(timestamp, 'localtime'),amps from current")
-    else:
-        cur.execute("select strftime('%Y-%m-%d %H:30:00', hour, 'localtime'),amps from current_hours")
+    cur.execute("SELECT value FROM settings WHERE name = 'voltage'")
+    voltage = cur.fetchone()[0]
+
+    tables = ['current','power','kwh','cost']
+    units = ['Amps', 'Watts', 'KWh', '£']
+    table_name = tables[type_id]
+    unit = units[type_id]
+
+    now = datetime.datetime.now()
+    month_ago = now - datetime.timedelta(days=31)
+    month_ago_ts = time.mktime(month_ago.timetuple())
+
+    if table_name == 'current':
+        cur.execute("SELECT strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, 'unixepoch'), 'localtime'),amps " \
+                    "FROM current_minutes WHERE timestamp >= ?", (month_ago_ts,))
+    elif table_name == 'power':
+        cur.execute("SELECT strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, 'unixepoch'), 'localtime'),(amps*?) " \
+                    "FROM current_minutes WHERE timestamp >= ?", (voltage,month_ago_ts))
+    elif table_name == 'kwh':
+        cur.execute("SELECT timestamp,(sum(power)/15000.0) AS kwh FROM power_minutes WHERE timestamp >= ? " \
+                    "GROUP BY (strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, 'unixepoch'), 'localtime'))", (month_ago_ts,))
+    #elif table_name == 'cost':
+    #    cur.execute("select strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, 'unixepoch'), 'localtime'),((sum(amps*240.0)/60000.0) * 14) AS cost from current_minutes WHERE timestamp >= ? group by (strftime('%Y-%m-%d %H:00', datetime(timestamp, 'unixepoch')))", (month_ago_ts,))
 
     results = cur.fetchall()
-    result = [(str(r[0]) + "," + str(r[1])) for r in results]
-    print result
 
-    return 'Date,Amps\n' + '\n'.join(result)
+    result = [(str(r[0]) + "," + str(r[1])) for r in results]
+
+    header = 'Date,' + unit + '\n'
+    return header + '\n'.join(result)
+
+@route('/data/<type_id:int>', method=['GET'])
+def data_default(db, type_id):
+    now = datetime.datetime.now() + datetime.timedelta(days=1)
+    return data(db, 1970,01,01,now.year,now.month,now.day,type_id)
+
+@route('/setvoltage', method=['POST'])
+def set_voltage(db):
+    voltage = request.POST.get("voltage")
+    cur = db.cursor()
+    cur.execute("UPDATE settings SET value=? WHERE name='voltage'", (voltage,))
+    db.commit()
+    return voltage
 
 @route('/', method=['GET', 'POST'])
-def default():
-    return template('index')
+def default(db):
+    cur = db.cursor()
+    cur.execute("SELECT value FROM settings WHERE name='voltage'")
+    voltage = cur.fetchone()[0]
+    return template('index', voltage=voltage)
 
 class HorusServer(Daemon):
 

@@ -22,27 +22,14 @@
 import sys, time, datetime, random, logging
 import sqlite3
 
-dbfile = 'horus.db'
+dbfile = 'horus2.db'
 
 conn = sqlite3.connect(dbfile)
 cur = conn.cursor()
 
-now = datetime.datetime.now()
-t = start_time = datetime.datetime(year=2012, month=03, day=1)
-
-count=0
-while t < now:
-    timestamp = time.mktime(t.timetuple())
-    value = random.random() * 200.0
-    try:
-        cur.execute("INSERT INTO current_minutes(timestamp, amps) VALUES (?,?)", (timestamp, value))
-        t += datetime.timedelta(seconds=300)
-        print t
-        if (count % 200) == 0:
-            conn.commit()
-    except:
-        t += datetime.timedelta(seconds=300)
-        pass
+cur.execute("select strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, 'unixepoch')), amps from current_minutes;")
+results = cur.fetchall()
+print "Done", len(results)
 
 conn.commit()
 conn.close()
