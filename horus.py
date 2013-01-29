@@ -138,6 +138,9 @@ def data(db, from_year,from_month,from_day,to_year,to_month,to_day,type_id):
     cur.execute("SELECT value FROM settings WHERE name = 'voltage'")
     voltage = cur.fetchone()[0]
 
+    cur.execute("SELECT value FROM settings WHERE name = 'pence_per_kwh'")
+    pence_per_kwh = cur.fetchone()[0]
+
     tables = ['current','power','kwh','cost']
     units = ['Amps', 'Watts', 'KWh', '£']
     table_name = tables[type_id]
@@ -147,17 +150,23 @@ def data(db, from_year,from_month,from_day,to_year,to_month,to_day,type_id):
     month_ago = now - datetime.timedelta(days=31)
     month_ago_ts = time.mktime(month_ago.timetuple())
 
+    # We divide by 75 as there are 75 samples in 5 minutes 
     if table_name == 'current':
-        cur.execute("SELECT strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, 'unixepoch'), 'localtime'),amps " \
+        cur.execute("SELECT strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, 'unixepoch'), 'localtime'),amps/75.0 " \
                     "FROM current_minutes WHERE timestamp >= ?", (month_ago_ts,))
     elif table_name == 'power':
-        cur.execute("SELECT strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, 'unixepoch'), 'localtime'),(amps*?) " \
+        cur.execute("SELECT strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, 'unixepoch'), 'localtime'),((amps/75.0)*?) " \
                     "FROM current_minutes WHERE timestamp >= ?", (voltage,month_ago_ts))
     elif table_name == 'kwh':
-        cur.execute("SELECT timestamp,(sum(power)/15000.0) AS kwh FROM power_minutes WHERE timestamp >= ? " \
-                    "GROUP BY (strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, 'unixepoch'), 'localtime'))", (month_ago_ts,))
-    #elif table_name == 'cost':
-    #    cur.execute("select strftime('%Y-%m-%d %H:%M:%S', datetime(timestamp, 'unixepoch'), 'localtime'),((sum(amps*240.0)/60000.0) * 14) AS cost from current_minutes WHERE timestamp >= ? group by (strftime('%Y-%m-%d %H:00', datetime(timestamp, 'unixepoch')))", (month_ago_ts,))
+        cur.execute("SELECT strftime('%Y-%m-%d %H:%M:%S', datetime(min(timestamp) + 1800, 'unixepoch'), 'localtime')," \
+                    "(sum((amps/75.0)*?)/12000.0) AS kwh FROM current_minutes WHERE timestamp >= ? " \
+                    "GROUP BY (strftime('%Y-%m-%d %H:00:00', datetime(timestamp, 'unixepoch'), 'localtime'))",
+                    (voltage,month_ago_ts,))
+    elif table_name == 'cost':
+        cur.execute("SELECT strftime('%Y-%m-%d %H:%M:%S', datetime(min(timestamp) + 1800, 'unixepoch'), 'localtime')," \
+                    "ROUND(((sum((amps/75.0)*?)/12000.0)*?),2) AS cost FROM current_minutes WHERE timestamp >= ? " \
+                    "GROUP BY (strftime('%Y-%m-%d %H:00:00', datetime(timestamp, 'unixepoch'), 'localtime'))",
+                    (voltage,pence_per_kwh/100.0,month_ago_ts,))
 
     results = cur.fetchall()
 
@@ -179,12 +188,23 @@ def set_voltage(db):
     db.commit()
     return voltage
 
+@route('/set_pence_per_kwh', method=['POST'])
+def set_pence_per_kwh(db):
+    pence_per_kwh = request.POST.get("pence_per_kwh")
+    cur = db.cursor()
+    cur.execute("UPDATE settings SET value=? WHERE name='pence_per_kwh'", (pence_per_kwh,))
+    db.commit()
+    return pence_per_kwh
+
 @route('/', method=['GET', 'POST'])
 def default(db):
     cur = db.cursor()
     cur.execute("SELECT value FROM settings WHERE name='voltage'")
     voltage = cur.fetchone()[0]
-    return template('index', voltage=voltage)
+
+    cur.execute("SELECT value FROM settings WHERE name='pence_per_kwh'")
+    pence_per_kwh = cur.fetchone()[0]
+    return template('index', voltage=voltage, pence_per_kwh=pence_per_kwh)
 
 class HorusServer(Daemon):
 

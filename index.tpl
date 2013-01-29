@@ -75,6 +75,16 @@
                 })
             }
         });
+
+        $("#pence_per_kwh").keyup(function(event){
+            if(event.keyCode == 13){
+                $.post("/set_pence_per_kwh", { pence_per_kwh: $(this).val()}, function() {
+                })
+                .fail(function() { 
+                    alert("Failed to set pence per kwh");
+                })
+            }
+        });
     });
 
   </script>
@@ -105,7 +115,7 @@
           </div>
           <div class="dcell" style="width:20%;">
           <label for="pence_per_kwh" style="display:inline;">Pence Per KWh:</label>
-          <input id="pence_per_kwh" type="text" value="14" size="5" style="display:inline;" />
+          <input id="pence_per_kwh" type="text" value="{{pence_per_kwh}}" size="5" style="display:inline;" />
           </div>
           <div class="dcell pad">&nbsp;</div>
     </div>

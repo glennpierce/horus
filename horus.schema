@@ -9,3 +9,4 @@ CREATE INDEX current_minutes_timestamp_inx on current_minutes(timestamp);
 CREATE TABLE settings(name VARCHAR(20) PRIMARY KEY, value REAL);
 
 INSERT INTO settings(name, value) VALUES ('voltage', 240.0);
+INSERT INTO settings(name, value) VALUES ('pence_per_kwh', 14.0);

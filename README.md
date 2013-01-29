@@ -9,7 +9,7 @@ A big thank to Peter Longley of Ecoeye for providing me with a monitor.
 First setup the db
 sqlite3 horus.db < horus.schema
 
-Run like sudo ./ecoiris.py  -v start
+Run like sudo ./horus.py  -v start
 
 Dependencies
 
